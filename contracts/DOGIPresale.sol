@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.24;
 
 /**
  * @title SafeMath
@@ -149,7 +149,7 @@ contract DogiPresale is Pausable {
     uint256 endTime; // item end time
   }
 
-  // 购买记录数据结构
+  // buy record struct
   struct BuyRecord {
     string itemId; //  order itemId
     address buyer; // the buyer address
@@ -317,22 +317,19 @@ contract DogiPresale is Pausable {
     }
   }
 
-  function _preValidatePurchase(address _beneficiary, uint256 _weiAmount, RewardItem item) view internal {
+  function _preValidatePurchase(address _beneficiary, uint256 _weiAmount, RewardItem _item) view internal {
     require(_beneficiary >= address(0));
     require(_weiAmount >= 0);
-    require(item.exist);
-    require(!item.paused);
-    require(now >= item.startTime);
-    require(item.endTime == 0 || now < item.endTime);
-    require(item.stock == 0 || (item.stock > item.soldCount));
-    require(item.price >= 0 && _weiAmount >= item.price );
+    require(_item.exist);
+    require(!_item.paused);
+    require(now >= _item.startTime);
+    require(_item.endTime == 0 || now < _item.endTime);
+    require(_item.stock == 0 || (_item.stock > _item.soldCount));
+    require(_item.price >= 0 && _weiAmount >= _item.price );
   }
+
 
   function _processPurchase(string _orderId, address _beneficiary, string _itemId, uint256 _price) internal {
-    _recordPurchase(_orderId, _beneficiary, _itemId, _price);
-  }
-
-  function _recordPurchase(string _orderId, address _beneficiary, string _itemId, uint256 _price) internal {
     BuyRecord memory _record = BuyRecord({
         itemId: _itemId,
         buyer: _beneficiary,
