@@ -131,7 +131,9 @@ contract Pausable is Ownable {
   }
 }
 
-// dogi crowdsale main contract
+/**
+ * dogi crowdsale main contract
+ */
 contract DogiPresale is Pausable {
   using SafeMath for uint256;
 
@@ -141,64 +143,56 @@ contract DogiPresale is Pausable {
     bool paused; // is paused
     string id; // item id
     uint256 price; // item price
-    uint256 stock; // 库存数量 为0表示不限制数量
-    uint256 soldCount; // 已售数量
-    uint256 startTime; // 发售开始时间
-    uint256 endTime; // 发售结束时间
+    uint256 stock; // item number if 0 represent no limit
+    uint256 soldCount; // already sold number
+    uint256 startTime; // item start time
+    uint256 endTime; // item end time
   }
 
   // 购买记录数据结构
   struct BuyRecord {
-    string itemId; // 购买的itemId
-    address buyer; // 购买人账号
-    bool refund; // 是否已退款
-    uint256 amount; // 金额
+    string itemId; //  order itemId
+    address buyer; // the buyer address
+    bool refund; // whether refund
+    uint256 amount; // item amount
   }
 
-  /**
-  开发者编辑字段 Part 1
-  ----------------start----------------
-  **/
 
   // Address where funds are collected
   address public wallet = 0x531a05a10259EbD3885880FC3a522A45dF2C9A53;
 
-  // 合约发布者名称
+  // contract's owner name
   string public ownerName = "Owner Name";
 
-  // 筹集目标 单位:wei
+  // the goal unit:wei
   uint256 public goal = 10 ether;
 
-  // 预售开始时间 使用时间戳
+  // presale start time
   uint256 public startTime = now;
 
-  // 预售截止时间 使用时间戳
+  // presale end time
   uint256 public endTime = now + 30 days;
 
-  /**
-  ----------------end----------------
-  开发者编辑字段 Part 1
-  **/
 
-   // 当前筹集金额
+   // the ether already raised
   uint256 public weiRaised;
 
-  // 众筹是否成功
+  // whether the crowdfunding is successful
   bool public fundingGoalReached = false;
 
-  // 是否已提款
+  // whether drawn the ether
   bool public isWithdrawed = false;
 
-  // 奖励项目集合 项目id -> 项目
+  // reward item mapping  project id -> item
   mapping (string => RewardItem) rewardItems;
 
-  // 投资记录  订单号 -> 购买信息
+  // buyer record  orderId -> BuyRecord
   mapping (string => BuyRecord) buyRecordOf;
 
-  // 投资人金额集合 投资人账号 -> 已投金额
+  // investors mapping inverstor address -> amount
   mapping(address => uint256) public balanceOf;
 
-  // 投资人数
+  // investors count
   uint256 public buyAddressCount;
 
   event TokenPurchase(address indexed purchaser, uint256 value, string itemId);
@@ -220,11 +214,6 @@ contract DogiPresale is Pausable {
     _;
   }
 
-  modifier onlyWallet() {
-      require(msg.sender == wallet);
-      _;
-  }
-
   modifier onlyFundingSuccess() {
       require(fundingGoalReached);
       _;
@@ -235,33 +224,25 @@ contract DogiPresale is Pausable {
       _;
   }
 
-  /**
-  开发者编辑字段 Part 2
-  ----------------start----------------
-  **/
 
   constructor() public {
     owner = msg.sender;
-    //请使用以下方法添加项目回报，务必保持和dogi.io网站中提交的回报数据一致
     addRewardItem("001", 1000, 100, 0, 0);
     addRewardItem("002", 1000, 100, 0, 0);
   }
 
-  /**
-  ----------------end----------------
-  开发者编辑字段 Part 2
-  **/
+
 
   /**
-    * 添加项目回报
-    * _rewardItemId：回报标识
-    * _price：回报价格 单位wei
-    * _count：数量限制 0为无限制
-    * _startTime：开始时间，0为无限制
-    * _endTime：结束时间，0为无限制
+    * @dev add item reward
+    * @param _rewardItemId 回报标识
+    * @param _price 回报价格 单位wei
+    * @param _count 数量限制 0为无限制
+    * @param _startTime 开始时间，0为无限制
+    * @param _endTime 结束时间，0为无限制
     **/
   function addRewardItem(string _rewardItemId, uint256 _price, uint256 _count, uint256 _startTime, uint256 _endTime) internal {
-    require(_price >= uint(0) && _count >= uint(0));
+    require(_price >= uint256(0) && _count >= uint256(0));
     RewardItem memory _item = RewardItem({
       exist:true,
       paused: false,
@@ -288,8 +269,8 @@ contract DogiPresale is Pausable {
 
   
   /**
-  *  获取购买记录
-  *  _orderId:dogi官网生成的订单id
+  *  @dev get buy record
+  *  @param _orderId dogi.io generation order id
   */
   function getBuyRecord(string _orderId) public constant returns (string itemId_,
     address buyer_, bool refund_, uint256 amount_) {
@@ -301,9 +282,9 @@ contract DogiPresale is Pausable {
 
 
   /**
-  *  购买商品接口
-  *  _orderId:dogi官网生成的订单id
-  *  _rewardItemId:商品标识
+  *  @dev buy goods
+  *  @param _orderId dogi.io generation order id
+  *  @param _rewardItemId goods identifier
   */
   function buyTokens(string _orderId, string _rewardItemId) public payable whenNotPaused beforeDeadline {
 
@@ -336,7 +317,6 @@ contract DogiPresale is Pausable {
     }
   }
 
-  // validate
   function _preValidatePurchase(address _beneficiary, uint256 _weiAmount, RewardItem item) view internal {
     require(_beneficiary >= address(0));
     require(_weiAmount >= 0);
@@ -363,7 +343,7 @@ contract DogiPresale is Pausable {
   }
 
   /**
-  *  提现接口，发布合约的账户可以提取
+  *  @dev draw interface,only contract owner can call
   */
   function safeWithdrawal() public whenNotPaused onlyOwner onlyFundingSuccess afterDeadline {
     require(!isWithdrawed);
@@ -373,8 +353,8 @@ contract DogiPresale is Pausable {
   }
 
   /**
-  *   退款接口，用户退款，必须众筹结束，并且失败由购买者调用
-  *   orderId：dogi官网生成的订单id
+  *   @dev refund interface,must crowdfunding over can call
+  *   @param _orderId dogi.io generation order id
   */
   function refund(string _orderId) public whenNotPaused afterDeadline onlyFundingFail {
     BuyRecord storage record = buyRecordOf[_orderId];
